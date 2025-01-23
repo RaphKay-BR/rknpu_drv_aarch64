@@ -994,9 +994,11 @@ static int rknpu_gem_mmap_pages(struct rknpu_gem_object *rknpu_obj,
 {
 	struct drm_device *drm = rknpu_obj->base.dev;
 	int ret = -EINVAL;
-
+#if KERNEL_VERSION(5, 10, 198) <= LINUX_VERSION_CODE
+	vma->vm_flags |= VM_MIXEDMAP;
+#else
 	vm_flags_set(vma, VM_MIXEDMAP);
-
+#endif
 	ret = __vm_map_pages(vma, rknpu_obj->pages, rknpu_obj->num_pages,
 			     vma->vm_pgoff);
 	if (ret < 0)
@@ -1088,8 +1090,11 @@ static int rknpu_gem_mmap_cache(struct rknpu_gem_object *rknpu_obj,
 		return -EINVAL;
 	}
 
+#if KERNEL_VERSION(5, 10, 198) <= LINUX_VERSION_CODE
+	vma->vm_flags |= VM_MIXEDMAP;
+#else
 	vm_flags_set(vma, VM_MIXEDMAP);
-
+#endif
 	vm_size = vma->vm_end - vma->vm_start;
 
 	/*
@@ -1144,8 +1149,13 @@ static int rknpu_gem_mmap_buffer(struct rknpu_gem_object *rknpu_obj,
 	 * vm_pgoff (used as a fake buffer offset by DRM) to 0 as we want to map
 	 * the whole buffer.
 	 */
+#if KERNEL_VERSION(5, 1, 198) <= LINUX_VERSION_CODE
+	vma->vm_flags |= VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP | VM_IO;
+	vma->vm_flags &= ~VM_PFNMAP;
+#else
 	vm_flags_set(vma, VM_DONTCOPY | VM_DONTEXPAND | VM_DONTDUMP | VM_IO);
 	vm_flags_clear(vma, VM_PFNMAP);
+#endif
 	vma->vm_pgoff = 0;
 
 	vm_size = vma->vm_end - vma->vm_start;
